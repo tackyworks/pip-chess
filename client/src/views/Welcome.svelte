@@ -6,16 +6,21 @@
   import MiniBoard from '../components/MiniBoard.svelte'
   import { api } from '../lib/api.ts'
   import { app, refresh } from '../lib/state.svelte.ts'
-  import { FEATURES, landingFor } from '../../../shared/site.ts'
-  import type { Account, Mood } from '../../../shared/types.ts'
+  import { FAQ, landingFor } from '../../../shared/site.ts'
+  import type { Account } from '../../../shared/types.ts'
+
+  const page = landingFor(location.pathname)
 
   let name = $state('')
-  let site = $state<'chesscom' | 'lichess'>('chesscom')
+  let site = $state<'chesscom' | 'lichess'>(page.path.includes('lichess') ? 'lichess' : 'chesscom')
   let busy = $state(false)
   let error = $state<string | null>(null)
   let recent = $state<Account[]>([])
+  let field: HTMLInputElement | undefined = $state()
 
   void api.accounts().then(a => (recent = a))
+
+  const SITES = { chesscom: 'chess.com', lichess: 'Lichess' } as const
 
   const enter = async (s: 'chesscom' | 'lichess', username: string) => {
     if (!username.trim() || busy) return
@@ -34,83 +39,137 @@
 
   const submit = (e: SubmitEvent) => {
     e.preventDefault()
+    if (!name.trim()) return field?.focus()
     void enter(site, name)
   }
 
-  const MOODS: Mood[] = ['shock', 'read', 'proud', 'cheer']
-  const page = landingFor(location.pathname)
-  if (page.path.includes('lichess')) site = 'lichess'
+  const pick = (s: 'chesscom' | 'lichess') => {
+    site = s
+    field?.focus()
+  }
+
+  const HABITS = [
+    { bad: true, title: 'Castling late', value: 'around move 14' },
+    { bad: true, title: 'Missing their threats', value: 'most of your tactical errors' },
+    { bad: false, title: 'Calm when ahead', value: 'few errors in winning positions' },
+  ]
 </script>
 
 <div class="landing">
+  <header class="top">
+    <a class="brand" href="/"><Pip mood="idle" size={30} /><span>pip</span></a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="/about">About</a>
+    </nav>
+  </header>
+
   <section class="hero">
-    <div class="copy" in:fly={{ y: 14, duration: 460 }}>
-      <span class="pill">100% free · no account · no paywall</span>
-      <h1>{page.headline[0]}<em>{page.headline[1]}</em>{page.headline[2]}</h1>
+    <div class="intro" in:fly={{ y: 10, duration: 420 }}>
+      <h1>{page.headline}</h1>
       <p class="lead">{page.lead}</p>
-      <div class="sites" role="tablist" aria-label="Where you play">
-        <button role="tab" aria-selected={site === 'chesscom'} class:on={site === 'chesscom'} onclick={() => (site = 'chesscom')}>chess.com</button>
-        <button role="tab" aria-selected={site === 'lichess'} class:on={site === 'lichess'} onclick={() => (site = 'lichess')}>Lichess</button>
+
+      <div class="sites" role="radiogroup" aria-label="Where you play">
+        <span>I play on</span>
+        {#each Object.entries(SITES) as [key, label]}
+          <button type="button" role="radio" aria-checked={site === key} class:on={site === key} onclick={() => pick(key as 'chesscom' | 'lichess')}>{label}</button>
+        {/each}
       </div>
-      <form onsubmit={submit}>
-        <input bind:value={name} placeholder={site === 'lichess' ? 'Your Lichess username' : 'Your chess.com username'} autocomplete="off" spellcheck="false" aria-label="Username" />
-        <button class="btn primary" disabled={busy || !name.trim()}>{busy ? 'Looking…' : 'Review my games'}</button>
+      <form onsubmit={submit} class:error={!!error}>
+        <input bind:this={field} bind:value={name} placeholder="Username" autocomplete="off" spellcheck="false" aria-label="{SITES[site]} username" />
+        <button class="btn primary go" disabled={busy}>{busy ? 'Finding your games…' : 'Review my games'}</button>
       </form>
-      {#if error}<p class="error" in:fly={{ y: 4 }}>{error}</p>{/if}
-      {#if recent.length}
-        <div class="recent">
-          <span class="fine">Continue as</span>
-          {#each recent.slice(0, 3) as a}
-            <button class="chip account" onclick={() => enter(a.site, a.username)}>{a.username}<span>{a.site === 'lichess' ? 'Lichess' : 'chess.com'}</span></button>
-          {/each}
-        </div>
+
+      {#if error}
+        <p class="error" in:fly={{ y: 4 }}>{error}</p>
+      {:else if recent.length}
+        <p class="recent">
+          Continue as
+          {#each recent.slice(0, 3) as a, i}{#if i}, {/if}<button onclick={() => enter(a.site, a.username)}>{a.username}</button>{/each}
+        </p>
+      {:else}
+        <p class="fine">Free and unlimited. No sign-up, only your public games.</p>
       {/if}
-      <p class="fine">Only your public games are fetched. Nothing to sign up for. Not affiliated with chess.com or Lichess.</p>
     </div>
-    <div class="mascot">
-      <Pip mood={error ? 'sad' : busy ? 'think' : name ? 'happy' : 'idle'} size={210} follow />
-      <div class="bubble b1"><Glyph label="brilliant" size={30} /><span>Brilliant</span></div>
-      <div class="bubble b2"><Glyph label="blunder" size={30} /><span>Blunder</span></div>
-      <div class="bubble b3"><Glyph label="great" size={30} /><span>Great find</span></div>
+
+    <figure class="shot" in:fly={{ y: 16, duration: 520, delay: 80 }}>
+      <div class="shot-board">
+        <MiniBoard fen="r1b1kbnr/pppp1Npp/8/6q1/2BnP3/8/PPPP1PPP/RNBQK2R b KQkq - 0 5" last="e5f7" size={340} />
+        <span class="mark"><Glyph label="blunder" size={34} /></span>
+      </div>
+      <figcaption class="shot-side">
+        <div class="score">
+          <span><b class="num">64.2</b> you</span>
+          <span><b class="num">88.9</b> opponent</span>
+        </div>
+        <div class="move">
+          <Glyph label="blunder" size={24} />
+          <b>5. Nxf7</b>
+          <span>Blunder</span>
+        </div>
+        <p>Grabbing the rook looks free, but the real target was your g2 pawn. After 5…Qxg2 the rook on h1 falls and mate on f3 follows.</p>
+        <div class="best"><Glyph label="best" size={20} />Best was <b>5. O-O</b></div>
+        <div class="coach"><Pip mood="worried" size={34} />Before taking anything, ask what their queen attacks.</div>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="row" id="how">
+    <div class="copy">
+      <h2>It notices what keeps happening</h2>
+      <p>After a handful of games Pip sees your patterns: the king left in the center, the move you rush in a sharp position, the fork you walk into again. Then it tells you what to change.</p>
+    </div>
+    <div class="habits">
+      {#each HABITS as h}
+        <div class="habit">
+          <span class="dot" class:bad={h.bad}></span>
+          <b>{h.title}</b>
+          <span>{h.value}</span>
+        </div>
+      {/each}
     </div>
   </section>
 
-  <section class="features">
-    {#each FEATURES as [title, text], i}
-      <div class="feature card" in:fly={{ y: 16, delay: 120 + i * 80, duration: 420 }}>
-        <Pip mood={MOODS[i]} size={70} />
-        <h3>{title}</h3>
-        <p>{text}</p>
-      </div>
-    {/each}
+  <section class="row flip">
+    <div class="copy">
+      <h2>Your mistakes come back as puzzles</h2>
+      <p>The position you got wrong returns a few days later, right before you would forget it. In between, Pip mixes in puzzles on the tactics you miss most.</p>
+    </div>
+    <figure class="puzzle">
+      <MiniBoard fen="r1b1kbnr/pppp1Npp/8/8/2BnP3/8/PPPP1PqP/RNBQKR2 b Qkq - 1 6" orientation="black" size={260} />
+      <figcaption><b>Black to play and win</b><span>From the same game, one move later</span></figcaption>
+    </figure>
   </section>
 
-  <section class="demo">
-    <div class="demo-board">
-      <MiniBoard fen="r1b1kbnr/pppp1Npp/8/6q1/2BnP3/8/PPPP1PPP/RNBQK2R b KQkq - 0 5" last="e5f7" size={300} />
-      <span class="demo-badge"><Glyph label="blunder" size={40} /></span>
+  <section class="row">
+    <div class="copy">
+      <h2>An opening repertoire built from your games</h2>
+      <p>Pip maps the openings you actually play, finds the exact move where you tend to go wrong, and drills the fix until it sticks.</p>
     </div>
-    <div class="demo-text">
-      <span class="label">What a review looks like</span>
-      <h2>Not just “blunder”. The reason why.</h2>
-      <div class="note card">
-        <Pip mood="worried" size={58} />
-        <p><b>5.Nxf7?? grabs the rook, but your g2 pawn was the real target.</b> After 5…Qxg2 the rook on h1 falls and mate follows on f3. Before taking anything, ask what the enemy queen attacks.</p>
-      </div>
-      <div class="demo-chips">
-        <span class="chip"><Glyph label="best" size={20} />Best was 5.O-O</span>
-        <span class="chip">A classic trap: the Blackburne Shilling Gambit</span>
-      </div>
+    <div class="line">
+      <span>1. e4 e5</span>
+      <span>2. Nf3 Nc6</span>
+      <span>3. Bc4 Nd4</span>
+      <span class="slip"><Glyph label="inaccuracy" size={20} />4. Nxe5</span>
+      <p>Your usual move walks into the trap’s main line. <b>4. Nxd4</b> keeps a clear edge.</p>
     </div>
   </section>
 
-  <section class="steps">
-    <h2>How it works</h2>
-    <ol>
-      <li><b>1</b><span>Type your chess.com or Lichess username.</span></li>
-      <li><b>2</b><span>Pip fetches and analyzes your recent games.</span></li>
-      <li><b>3</b><span>Read the coach's notes, then train what matters.</span></li>
-    </ol>
+  <section class="faq">
+    <h2>Questions</h2>
+    <div class="qa">
+      {#each FAQ as [q, a]}
+        <details>
+          <summary>{q}</summary>
+          <p>{a}</p>
+        </details>
+      {/each}
+    </div>
+  </section>
+
+  <section class="closing">
+    <h2>Your last game is waiting.</h2>
+    <button class="btn primary" onclick={() => { scrollTo({ top: 0, behavior: 'smooth' }); field?.focus() }}>Review it free</button>
   </section>
 
   <Footer />
@@ -120,304 +179,414 @@
   .landing {
     min-height: 100vh;
   }
-  .hero {
-    width: min(1100px, 100%);
+  .top {
+    width: min(1160px, 100%);
     margin: 0 auto;
-    padding: 80px 24px 60px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    text-decoration: none;
+    font: 700 27px var(--display);
+  }
+  .top nav {
+    display: flex;
+    gap: 22px;
+  }
+  .top nav a {
+    color: var(--dim);
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .top nav a:hover {
+    color: var(--text);
+  }
+
+  .hero {
+    width: min(1160px, 100%);
+    margin: 0 auto;
+    padding: 56px 24px 90px;
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 40px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 56px;
     align-items: center;
   }
-  .pill {
-    display: inline-flex;
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
-  }
   h1 {
-    font-size: clamp(36px, 5vw, 58px);
-    line-height: 1.05;
-    margin: 18px 0 16px;
-  }
-  em {
-    font-style: normal;
-    color: var(--accent);
+    margin: 0 0 18px;
+    font-size: clamp(40px, 5.2vw, 64px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    max-width: 560px;
   }
   .lead {
+    margin: 0 0 30px;
+    max-width: 500px;
     font-size: 19px;
     line-height: 1.55;
     color: var(--dim);
-    margin: 0 0 26px;
-    max-width: 540px;
   }
   form {
     display: flex;
     gap: 10px;
-    max-width: 560px;
+    max-width: 540px;
+  }
+  .sites {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 10px;
+    font-size: 15px;
+    color: var(--faint);
+    font-weight: 700;
+  }
+  .sites span {
+    margin-right: 4px;
+  }
+  .sites button {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-weight: 800;
+    color: var(--dim);
+    transition: background 0.15s, color 0.15s;
+  }
+  .sites button:hover {
+    color: var(--text);
+  }
+  .sites button.on {
+    color: var(--accent-ink);
+    background: var(--accent);
   }
   input {
     flex: 1;
     min-width: 0;
-    height: 56px;
-    padding: 0 18px;
-    border-radius: 16px;
+    height: 54px;
+    padding: 0 16px;
+    border-radius: 14px;
     background: var(--panel);
-    border: 2px solid var(--line);
+    border: 1px solid var(--line-2);
+    outline: 0;
     font-size: 17px;
     font-weight: 700;
-    outline: 0;
     transition: border-color 0.15s;
   }
   input:focus {
     border-color: var(--accent);
   }
-  form .btn {
-    height: 56px;
-    padding: 0 26px;
+  form.error input {
+    border-color: var(--red);
   }
-  .sites {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
-    margin-bottom: 12px;
-    border-radius: 14px;
-    background: var(--panel);
-    border: 2px solid var(--line);
-  }
-  .sites button {
-    padding: 7px 16px;
-    border-radius: 10px;
-    font-weight: 800;
-    font-size: 14.5px;
-    color: var(--dim);
-    transition: background 0.15s, color 0.15s;
-  }
-  .sites button.on {
-    background: var(--accent);
-    color: var(--accent-ink);
-  }
-  .recent {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin-top: 14px;
-  }
-  .recent .fine {
-    margin: 0;
-  }
-  .account {
-    height: 32px;
-    gap: 8px;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .account span {
+  input::placeholder {
     color: var(--faint);
-    font-size: 12px;
+  }
+  .go {
+    height: 54px;
+    padding: 0 22px;
+    font-size: 16px;
+    border-radius: 14px;
+  }
+  .fine,
+  .recent,
+  .error {
+    margin: 14px 0 0;
+    font-size: 15px;
+    color: var(--faint);
+  }
+  .recent button {
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .recent button:hover {
+    text-decoration: underline;
   }
   .error {
     color: var(--red);
-    font-weight: 800;
-    margin: 12px 0 0;
+    font-weight: 700;
   }
-  .fine {
-    font-size: 14px;
-    color: var(--faint);
-    margin: 14px 0 0;
+
+  .shot {
+    margin: 0;
+    display: flex;
+    border-radius: 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 40px 80px -40px rgb(0 0 0 / 0.9);
+    overflow: hidden;
   }
-  .mascot {
+  .shot-board {
     position: relative;
-    display: grid;
-    place-items: center;
-    min-height: 340px;
+    padding: 14px;
+    background: var(--bg-2);
   }
-  .bubble {
+  .shot-board :global(.mini) {
+    border-radius: 8px;
+  }
+  .mark {
     position: absolute;
+    left: calc(14px + 340px * 6 / 8 - 18px);
+    top: calc(14px + 340px / 8 - 16px);
+  }
+  .shot-side {
+    width: 268px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 14.5px;
+  }
+  .score {
+    display: flex;
+    gap: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+    color: var(--faint);
+    font-weight: 700;
+  }
+  .score b {
+    display: block;
+    font: 600 26px var(--display);
+    color: var(--text);
+  }
+  .move {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .move b {
+    font-size: 17px;
+  }
+  .move span {
+    color: var(--c-blunder);
+    font-weight: 800;
+  }
+  .shot-side p {
+    margin: 0;
+    color: var(--dim);
+    line-height: 1.55;
+  }
+  .best {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--dim);
+    font-weight: 700;
+  }
+  .best b {
+    color: var(--text);
+  }
+  .coach {
+    margin-top: auto;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 16px 8px 8px;
-    border-radius: 999px;
+    padding: 10px 12px;
+    border-radius: 12px;
     background: var(--panel-2);
-    border: 2px solid var(--line-2);
-    font-weight: 900;
-    font-size: 15px;
-    animation: drift 6s ease-in-out infinite;
+    color: var(--text);
+    font-weight: 700;
+    line-height: 1.35;
   }
-  .b1 {
-    top: 8%;
-    left: 2%;
-  }
-  .b2 {
-    top: 48%;
-    right: 0;
-    animation-delay: -2s;
-  }
-  .b3 {
-    bottom: 4%;
-    left: 10%;
-    animation-delay: -4s;
-  }
-  @keyframes drift {
-    50% {
-      transform: translateY(-8px);
-    }
-  }
-  .features {
-    width: min(1100px, 100%);
+
+  .row {
+    width: min(1000px, 100%);
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 70px 24px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: center;
+    border-top: 1px solid var(--line);
   }
-  .feature {
-    padding: 22px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  .row.flip .copy {
+    order: 2;
   }
-  .feature h3 {
-    margin: 6px 0 0;
-    font-size: 18px;
+  .copy h2,
+  .faq h2,
+  .closing h2 {
+    margin: 0 0 12px;
+    font-size: 30px;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
   }
-  .feature p {
+  .copy p {
     margin: 0;
     color: var(--dim);
-    font-size: 15px;
-    line-height: 1.5;
+    font-size: 17px;
+    line-height: 1.6;
   }
-  .demo {
-    width: min(1100px, 100%);
-    margin: 0 auto;
-    padding: 70px 24px 0;
+  .habits {
+    display: flex;
+    flex-direction: column;
+  }
+  .habit {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 44px;
-    align-items: center;
+    column-gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
   }
-  .demo-board {
-    position: relative;
-    padding: 10px;
-    border-radius: 22px;
-    background: var(--panel);
-    border: 2px solid var(--line);
-    rotate: -2deg;
+  .habit:last-child {
+    border-bottom: 0;
   }
-  .demo-badge {
-    position: absolute;
-    left: calc(10px + 300px * 5 / 8 + 300px / 8 - 22px);
-    top: calc(10px + 300px / 8 - 20px);
+  .dot {
+    grid-row: span 2;
+    width: 10px;
+    height: 10px;
+    margin-top: 7px;
+    border-radius: 50%;
+    background: var(--c-best);
   }
-  .demo-text {
+  .dot.bad {
+    background: var(--orange);
+  }
+  .habit b {
+    font-size: 17px;
+  }
+  .habit span:last-child {
+    color: var(--dim);
+  }
+  .puzzle {
+    margin: 0;
+    justify-self: center;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
   }
-  .demo-text h2 {
-    margin: 0;
-    font-size: clamp(28px, 3.4vw, 38px);
-    line-height: 1.1;
-  }
-  .note {
+  .puzzle figcaption {
     display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    padding: 18px 20px;
+    flex-direction: column;
   }
-  .note p {
-    margin: 0;
-    color: var(--dim);
-    font-size: 16px;
-    line-height: 1.55;
+  .puzzle figcaption span {
+    color: var(--faint);
+    font-size: 14px;
   }
-  .note b {
-    color: var(--text);
-  }
-  .demo-chips {
+  .line {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 8px 14px;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 800;
   }
-  .demo-chips .chip {
-    height: 34px;
-    gap: 8px;
+  .line > span {
     color: var(--dim);
   }
-  .steps {
-    width: min(1100px, 100%);
+  .line .slip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--c-inaccuracy);
+  }
+  .line p {
+    flex-basis: 100%;
+    margin: 6px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--dim);
+    line-height: 1.55;
+  }
+  .line p b {
+    color: var(--text);
+  }
+
+  .faq {
+    width: min(760px, 100%);
     margin: 0 auto;
-    padding: 60px 24px 10px;
+    padding: 70px 24px 30px;
+    border-top: 1px solid var(--line);
+  }
+  .qa details {
+    border-bottom: 1px solid var(--line);
+  }
+  .qa summary {
+    list-style: none;
+    padding: 18px 0;
+    font-size: 17px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .qa summary::-webkit-details-marker {
+    display: none;
+  }
+  .qa summary::after {
+    content: '+';
+    color: var(--faint);
+    font-weight: 600;
+    font-size: 22px;
+    line-height: 1;
+    transition: rotate 0.2s;
+  }
+  .qa details[open] summary::after {
+    rotate: 45deg;
+  }
+  .qa p {
+    margin: -6px 0 18px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+  .closing {
+    padding: 60px 24px 20px;
     text-align: center;
   }
-  .steps h2 {
-    font-size: 30px;
-    margin: 0 0 22px;
+  .closing .btn {
+    height: 50px;
+    padding: 0 26px;
+    margin-top: 6px;
   }
-  ol {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
-  li {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 18px;
-    border-radius: var(--radius);
-    background: var(--panel);
-    border: 2px solid var(--line);
-    text-align: left;
-    font-weight: 800;
-    font-size: 16px;
-  }
-  li b {
-    width: 40px;
-    height: 40px;
-    flex: none;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    background: var(--accent);
-    color: var(--accent-ink);
-    box-shadow: inset 0 -4px 0 var(--accent-d);
-    font-size: 18px;
-  }
-  @media (max-width: 900px) {
-    .demo {
-      grid-template-columns: 1fr;
-      justify-items: center;
-    }
+
+  @media (max-width: 980px) {
     .hero {
       grid-template-columns: 1fr;
-      padding-top: 40px;
+      padding-top: 30px;
     }
-    .mascot {
-      order: -1;
-      min-height: 260px;
+    .shot {
+      justify-self: center;
     }
-    .features,
-    ol {
-      grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 760px) {
+    .shot {
+      flex-direction: column;
+      width: 100%;
+    }
+    .shot-board {
+      display: flex;
+      justify-content: center;
+    }
+    .shot-side {
+      width: auto;
+    }
+    .mark {
+      display: none;
+    }
+    .row {
+      grid-template-columns: 1fr;
+      gap: 28px;
+      padding: 50px 24px;
+    }
+    .row.flip .copy {
+      order: 0;
     }
   }
   @media (max-width: 560px) {
     form {
       flex-direction: column;
     }
-    .features,
-    ol {
-      grid-template-columns: 1fr;
+    input,
+    .go {
+      flex: none;
+      width: 100%;
+    }
+    .shot-board :global(.mini) {
+      width: 100%;
+      height: auto;
     }
   }
 </style>

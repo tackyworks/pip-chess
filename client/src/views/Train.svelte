@@ -210,21 +210,28 @@
 {#if !session}
   <div class="center"><Pip mood="think" size={80} /></div>
 {:else if stage === 'intro'}
-  <div class="center intro" in:fly={{ y: 10, duration: 360 }}>
-    <Pip mood="happy" size={110} follow />
-    <span class="label">Puzzle rating</span>
-    <div class="rating num"><Count value={rating} /></div>
-    <div class="facts">
-      <div class="fact card"><b class="num">{session.due.length}</b><span>from your games</span></div>
-      <div class="fact card"><b class="num">{session.drills.length}</b><span>{theme ? words(theme).toLowerCase() : 'focus'} drills</span></div>
-      <div class="fact card"><b class="num">{session.stats.learned}</b><span>learned</span></div>
-    </div>
-    <button class="btn primary big" onclick={begin} disabled={!session.due.length && !session.drills.length}>Start training</button>
-    <div class="picks">
-      {#each [...new Set([...session.focus.map(f => f.theme), ...PICKS])].slice(0, 9) as t}
-        <button class="pick" class:on={theme === t} onclick={() => go(theme === t ? '/train' : `/train?theme=${t}`)}>{words(t)}</button>
-      {/each}
-    </div>
+  <div class="home" in:fly={{ y: 10, duration: 360 }}>
+    <header>
+      <h1>Train</h1>
+      <p>Puzzle rating <b class="num"><Count value={rating} /></b>{#if session.stats.learned} · {session.stats.learned} positions learned{/if}</p>
+    </header>
+    <section class="session">
+      <div>
+        <h2>{theme ? words(theme) : 'Today’s session'}</h2>
+        <p>
+          {#if session.due.length}{session.due.length} position{session.due.length === 1 ? '' : 's'} from your own games, then {/if}{session.drills.length} puzzles {theme ? 'on this theme' : 'on the tactics you miss most'}.
+        </p>
+      </div>
+      <button class="btn primary start" onclick={begin} disabled={!session.due.length && !session.drills.length}>Start</button>
+    </section>
+    <section class="themes">
+      <h3>Or practice one theme</h3>
+      <div class="theme-list">
+        {#each [...new Set([...session.focus.map(f => f.theme), ...PICKS])].slice(0, 9) as t}
+          <button class:on={theme === t} onclick={() => go(theme === t ? '/train' : `/train?theme=${t}`)}>{words(t)}</button>
+        {/each}
+      </div>
+    </section>
   </div>
 {:else if stage === 'done'}
   <div class="center intro" in:fly={{ y: 10, duration: 360 }}>
@@ -302,66 +309,88 @@
   .small {
     font-size: 14px;
   }
-  .rating {
-    font-size: 76px;
-    font-weight: 900;
-    line-height: 1;
-  }
-  .intro .label {
-    margin-top: 14px;
-  }
-  .facts {
-    display: flex;
-    gap: 12px;
-    margin: 20px 0 22px;
-  }
-  .fact {
+  .home {
+    width: min(760px, 100%);
+    margin: 0 auto;
+    padding: 36px 24px 90px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-width: 140px;
-    padding: 14px 18px;
+    gap: 34px;
   }
-  .fact b {
-    font-size: 28px;
-    font-weight: 900;
-    line-height: 1.1;
+  .home h1 {
+    margin: 0;
+    font-size: 34px;
   }
-  .fact span {
-    font-size: 14px;
+  .home header p {
+    margin: 6px 0 0;
+    color: var(--faint);
+    font-weight: 700;
+  }
+  .home header b {
+    color: var(--text);
+  }
+  .session {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 26px;
+    border-radius: 18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+  }
+  .session div {
+    flex: 1;
+  }
+  .session h2 {
+    margin: 0 0 6px;
+    font-size: 24px;
+  }
+  .session p {
+    margin: 0;
     color: var(--dim);
+    line-height: 1.55;
   }
-  .big {
-    height: 54px;
-    padding: 0 40px;
+  .start {
+    height: 50px;
+    padding: 0 30px;
     font-size: 16px;
   }
-  .picks {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 24px;
-    max-width: 620px;
+  .themes h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
   }
-  .pick {
-    padding: 8px 15px;
-    border-radius: 12px;
-    font-size: 14px;
-    font-weight: 800;
+  .theme-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 28px;
+  }
+  .theme-list button {
+    padding: 11px 0;
+    text-align: left;
+    font-weight: 700;
     color: var(--dim);
-    border: 2px solid var(--line);
-    border-bottom-width: 4px;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    border-bottom: 1px solid var(--line);
+    transition: color 0.15s;
   }
-  .pick:hover {
+  .theme-list button:hover {
     color: var(--text);
-    border-color: var(--line-2);
   }
-  .pick.on {
+  .theme-list button.on {
     color: var(--accent);
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .big {
+    height: 50px;
+    padding: 0 32px;
+    font-size: 16px;
+  }
+  @media (max-width: 640px) {
+    .session {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .theme-list {
+      grid-template-columns: 1fr 1fr;
+    }
   }
   h2 {
     font-size: 38px;
@@ -414,7 +443,6 @@
     height: 100%;
     border-radius: 18px;
     background: var(--accent);
-    box-shadow: inset 0 -4px 0 var(--accent-d), inset 0 4px 0 rgb(255 255 255 / 0.22);
     transition: width 0.5s var(--spring);
   }
   .count {

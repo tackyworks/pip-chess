@@ -3,13 +3,11 @@
   import Pip from '../components/Pip.svelte'
   import Avatar from '../components/Avatar.svelte'
   import Sponsor from '../components/Sponsor.svelte'
-  import MiniBoard from '../components/MiniBoard.svelte'
-  import Icon from '../components/Icon.svelte'
   import { api } from '../lib/api.ts'
   import { app, siteName, working } from '../lib/state.svelte.ts'
   import { dayLabel, opponent, outcome } from '../lib/format.ts'
   import { go, href } from '../lib/router.svelte.ts'
-  import type { GameDetail, GameRow, Mood } from '../../../shared/types.ts'
+  import type { GameRow } from '../../../shared/types.ts'
 
   let importing = $state(false)
   let pgn = $state('')
@@ -31,9 +29,6 @@
   const busy = $derived(working())
   const RESULT = { win: 'Won', loss: 'Lost', draw: 'Draw' }
 
-  const hour = new Date().getHours()
-  const greeting = hour < 5 ? 'Up late' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
-
   const week = $derived.by(() => {
     const since = Date.now() / 1000 - 7 * 86400
     const list = app.games.filter(g => g.you && g.endTime >= since && g.timeClass !== 'pip')
@@ -47,32 +42,9 @@
     }
   })
 
-  const latest = $derived(app.games.find(g => g.you && g.timeClass !== 'pip') ?? null)
-  let preview = $state<GameDetail | null>(null)
-  $effect(() => {
-    const id = latest?.id
-    if (!id) return
-    void api.game(id).then(d => (preview = d)).catch(() => undefined)
-  })
-  const lastLoss = $derived(app.games.find(g => g.you && outcome(g) === 'loss' && g.timeClass !== 'pip') ?? null)
+  const nudge = $derived(app.games.find(g => g.you && g.timeClass !== 'pip' && outcome(g) === 'loss' && g.status === 'done') ?? null)
 
-  const mood = $derived<Mood>(busy ? 'think' : !week.games ? 'happy' : week.wins > week.losses ? 'proud' : week.wins < week.losses ? 'ok' : 'happy')
-  const line = $derived(
-    busy
-      ? `I’m reviewing ${busy} game${busy === 1 ? '' : 's'} for you right now.`
-      : week.games
-        ? `${week.games} game${week.games === 1 ? '' : 's'} this week, ${week.wins} win${week.wins === 1 ? '' : 's'}. Let’s keep it going.`
-        : 'Play a few games and I’ll have something to say about them.',
-  )
-
-  const streak = $derived(app.me?.streak ?? null)
-  const PLAN = $derived([
-    lastLoss
-      ? { icon: 'chances', title: `Learn from the loss vs ${opponent(lastLoss).name}`, href: `/game/${encodeURIComponent(lastLoss.id)}` }
-      : { icon: 'chances', title: 'Review your latest game', href: latest ? `/game/${encodeURIComponent(latest.id)}` : '/' },
-    { icon: 'fork', title: 'Solve a round of puzzles', href: '/train' },
-    { icon: 'development', title: 'Drill your opening repertoire', href: '/openings' },
-  ])
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
   const submitPgn = async () => {
     importError = null
@@ -90,25 +62,20 @@
 
 <div class="page">
   <header>
-    <Pip {mood} size={78} follow />
     <div class="who">
-      <h1>{greeting}, {app.me?.username}!</h1>
-      <p class="dim">
-        {line}
-        {#if app.me?.rating}<span class="rating-chip">{app.me.rating} on {siteName()}</span>{/if}
+      <h1>Games</h1>
+      <p>
+        {app.me?.username}{#if app.me?.rating} · {app.me.rating} on {siteName()}{/if}{#if busy} · <span class="busy">reviewing {busy}</span>{/if}
       </p>
     </div>
     <div class="tools">
       <button class="btn ghost" onclick={() => (importing = !importing)}>Paste PGN</button>
-      <button class="btn" onclick={() => api.sync().then(() => (app.syncing = true))} disabled={app.syncing}>
-        <svg viewBox="0 0 20 20" width="18" height="18"><path d="M15.5 8.5A5.8 5.8 0 0 0 5 6.6M4.5 11.5A5.8 5.8 0 0 0 15 13.4M5 3.5v3.3h3.3M15 16.5v-3.3h-3.3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg>
-        {app.syncing ? 'Syncing…' : 'Sync'}
-      </button>
+      <button class="btn" onclick={() => api.sync().then(() => (app.syncing = true))} disabled={app.syncing}>{app.syncing ? 'Syncing…' : 'Sync'}</button>
     </div>
   </header>
 
   {#if importing}
-    <div class="import card" transition:slide={{ duration: 200 }}>
+    <div class="import" transition:slide={{ duration: 200 }}>
       <textarea bind:value={pgn} placeholder="Paste a PGN from any site" rows="5"></textarea>
       <div class="row">
         {#if importError}<span class="error">{importError}</span>{/if}
@@ -121,75 +88,39 @@
 
   {#if app.syncError}<p class="error">{app.syncError}</p>{/if}
 
-  {#if latest}
-    <section class="dash">
-      <a class="last card" href={href(`/game/${encodeURIComponent(latest.id)}`)}>
-        {#if preview?.line.moves.length}
-          {@const end = preview.line.moves.at(-1)!}
-          <MiniBoard fen={end.fen} last={end.uci} orientation={latest.you ?? 'white'} size={124} />
-        {:else}
-          <span class="mini-ph"></span>
-        {/if}
-        <span class="last-body">
-          <span class="label">Latest game</span>
-          <b>vs {opponent(latest).name}</b>
-          <span class="dim small">{latest.opening ?? latest.timeClass}</span>
-          <span class="last-foot">
-            {#if outcome(latest)}<span class="result {outcome(latest)}">{RESULT[outcome(latest)!]}</span>{/if}
-            {#if latest.accuracy !== null}<span class="acc-small num">{latest.accuracy.toFixed(1)}<small>%</small></span>{/if}
-          </span>
-        </span>
-      </a>
-
-      <div class="plan card">
-        <div class="plan-head">
-          <span class="label">Today’s plan</span>
-          {#if streak}<span class="plan-count num">{Math.min(streak.today, streak.goal)}/{streak.goal}</span>{/if}
-        </div>
-        {#each PLAN as step, i}
-          <a class="step" href={href(step.href)}>
-            <span class="step-icon" class:done={!!streak && streak.today > i}><Icon name={streak && streak.today > i ? 'conversion' : step.icon} size={20} /></span>
-            <span class="step-title">{step.title}</span>
-            <svg viewBox="0 0 20 20" width="18" height="18" class="chev"><path d="M7.5 4.5L13 10l-5.5 5.5" /></svg>
-          </a>
-        {/each}
-      </div>
-    </section>
-
-    <section class="week">
-      <div class="tile card"><span class="tile-value num">{week.games}</span><span class="dim small">games this week</span></div>
-      <div class="tile card"><span class="tile-value num">{week.wins}<small>–{week.losses}</small></span><span class="dim small">wins – losses</span></div>
-      <div class="tile card"><span class="tile-value num">{week.accuracy === null ? '–' : week.accuracy.toFixed(1)}{#if week.accuracy !== null}<small>%</small>{/if}</span><span class="dim small">average accuracy</span></div>
-      <div class="tile card streak-tile"><span class="tile-value num">{streak?.days ?? 0}<small>&nbsp;day{streak?.days === 1 ? '' : 's'}</small></span><span class="dim small">streak · best {streak?.best ?? 0}</span></div>
-    </section>
+  {#if week.games}
+    <p class="summary">
+      This week: <b>{plural(week.games, 'game')}</b>, <b>{week.wins}–{week.losses}</b>{#if week.accuracy !== null}, <b>{week.accuracy.toFixed(1)}%</b> average accuracy{/if}.
+      {#if nudge}<a href={href(`/game/${encodeURIComponent(nudge.id)}`)}>Look at the loss to {opponent(nudge).name} →</a>{/if}
+    </p>
   {/if}
 
   {#if classes.length > 1}
-    <div class="filters">
+    <nav class="filters" aria-label="Time control">
       {#each ['all', ...classes] as c}
-        <button class="filter" class:on={filter === c} onclick={() => (filter = c)}>{c}</button>
+        <button class:on={filter === c} onclick={() => (filter = c)}>{c}</button>
       {/each}
-    </div>
+    </nav>
   {/if}
 
   {#if !app.games.length}
     <div class="empty">
-      <Pip mood={app.syncing ? 'think' : 'sleep'} size={96} />
-      <p class="dim">{app.syncing ? `Fetching your games from ${siteName()}…` : 'No games yet.'}</p>
+      <Pip mood={app.syncing ? 'think' : 'sleep'} size={84} />
+      <p>{app.syncing ? `Fetching your games from ${siteName()}…` : 'No games yet. Play one and press Sync.'}</p>
     </div>
   {:else}
     {#each groups as group, gi (group.day)}
       <section class="day">
-        <h2 class="label">{group.day}</h2>
+        <h2>{group.day}</h2>
         <div class="list">
           {#each group.games as game (game.id)}
             {@const result = outcome(game)}
             {@const rival = opponent(game)}
             {@const p = app.progress[game.id]}
             <a class="game" href={href(`/game/${encodeURIComponent(game.id)}`)}>
-              <Avatar name={rival.name} size={44} mascot={game.timeClass === 'pip' && rival.name === 'Pip'} />
+              <Avatar name={rival.name} size={34} mascot={game.timeClass === 'pip' && rival.name === 'Pip'} />
               <span class="who-col">
-                <span class="name">{rival.name}<span class="faint num rating">{rival.rating || ''}</span></span>
+                <span class="name">{rival.name}<span class="rating num">{rival.rating || ''}</span></span>
                 <span class="opening">{game.opening ?? 'Unknown opening'}</span>
               </span>
               <span class="meta"><span class="tc">{game.timeClass}</span> · {Math.ceil(game.moves / 2)} moves</span>
@@ -197,16 +128,14 @@
               <span class="score">
                 {#if game.accuracy !== null}
                   <span class="acc num" class:stale={game.status !== 'done'}>{game.accuracy.toFixed(1)}</span>
-                  <span class="faint small">accuracy</span>
                 {:else if game.status === 'analyzing'}
-                  <span class="bar"><span style="width: {p && p.total ? Math.max(6, (p.done / p.total) * 100) : 6}%"></span></span>
-                  <span class="faint small">analyzing</span>
+                  <span class="bar" title="Reviewing"><span style="width: {p && p.total ? Math.max(6, (p.done / p.total) * 100) : 6}%"></span></span>
                 {:else if game.status === 'queued'}
-                  <span class="faint small">queued</span>
+                  <span class="state">Queued</span>
                 {:else if game.status === 'error'}
-                  <span class="error small">failed</span>
+                  <span class="state error">Failed</span>
                 {:else}
-                  <span class="faint small">not analyzed</span>
+                  <span class="state">–</span>
                 {/if}
               </span>
             </a>
@@ -217,8 +146,8 @@
     {/each}
     {#if unanalyzed}
       <div class="more">
-        <button class="btn ivory" onclick={() => api.analyzeMore(20)}>Analyze 20 more</button>
-        <span class="dim">{unanalyzed} games not analyzed yet</span>
+        <button class="btn" onclick={() => api.analyzeMore(20)}>Review 20 more</button>
+        <span>{plural(unanalyzed, 'older game')} not reviewed yet</span>
       </div>
     {/if}
   {/if}
@@ -226,202 +155,65 @@
 
 <style>
   .page {
-    width: min(980px, 100%);
+    width: min(900px, 100%);
     margin: 0 auto;
-    padding: 34px 24px 90px;
+    padding: 36px 24px 90px;
   }
   header {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 16px;
-    margin-bottom: 26px;
+    margin-bottom: 18px;
   }
   .who {
     flex: 1;
     min-width: 0;
   }
   h1 {
-    font-size: 32px;
     margin: 0;
+    font-size: 34px;
     line-height: 1.1;
   }
   header p {
-    margin: 4px 0 0;
-    font-size: 15px;
+    margin: 6px 0 0;
+    color: var(--faint);
+    font-weight: 700;
   }
-  .rating-chip {
-    display: inline-flex;
-    margin-left: 8px;
-    padding: 2px 10px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--dim);
-    background: var(--panel-2);
-  }
-  .dash {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-  .last {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 16px;
-    color: inherit;
-    text-decoration: none;
-    transition: border-color 0.15s, transform 0.2s var(--spring);
-  }
-  .last:hover,
-  .step:hover {
-    border-color: var(--line-2);
-  }
-  .last:hover {
-    transform: translateY(-2px);
-  }
-  .mini-ph {
-    width: 124px;
-    height: 124px;
-    flex: none;
-    border-radius: 12px;
-    background: var(--panel-2);
-  }
-  .last-body {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-  }
-  .last-body b {
-    font: 600 22px var(--display);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .last-foot {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 6px;
-  }
-  .acc-small {
-    font: 600 22px var(--display);
-  }
-  .acc-small small {
-    font-size: 14px;
-    color: var(--dim);
-  }
-  .small {
-    font-size: 14px;
-  }
-  .plan {
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .plan-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-  }
-  .plan-count {
-    font-weight: 900;
-    color: var(--orange);
-  }
-  .step {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 7px 8px;
-    margin: 0 -8px;
-    border-radius: 12px;
-    border: 2px solid transparent;
-    color: inherit;
-    text-decoration: none;
-    font-weight: 800;
-    font-size: 15px;
-    transition: background 0.15s;
-  }
-  .step:hover {
-    background: var(--panel-2);
-  }
-  .step-icon {
-    width: 36px;
-    height: 36px;
-    flex: none;
-    display: grid;
-    place-items: center;
-    border-radius: 11px;
+  .busy {
     color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 13%, transparent);
-  }
-  .step-icon.done {
-    color: var(--accent-ink);
-    background: var(--accent);
-  }
-  .step-title {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .chev {
-    fill: none;
-    stroke: var(--faint);
-    stroke-width: 2.4;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .week {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-    margin-bottom: 30px;
-  }
-  .tile {
-    padding: 14px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .tile-value {
-    font: 600 32px/1.15 var(--display);
-  }
-  .tile-value small {
-    font-size: 17px;
-    color: var(--dim);
-  }
-  .streak-tile .tile-value {
-    color: var(--orange);
-  }
-  @media (max-width: 860px) {
-    .dash {
-      grid-template-columns: 1fr;
-    }
-    .week {
-      grid-template-columns: 1fr 1fr;
-    }
   }
   .tools {
     display: flex;
-    gap: 10px;
+    gap: 6px;
+  }
+  .summary {
+    margin: 0 0 22px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+  .summary b {
+    color: var(--text);
+  }
+  .summary a {
+    margin-left: 6px;
+    color: var(--accent);
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .summary a:hover {
+    text-decoration: underline;
   }
   .import {
-    padding: 16px;
     margin-bottom: 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
   textarea {
-    background: var(--bg);
-    border: 2px solid var(--line);
-    border-radius: 14px;
+    background: var(--panel);
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
     padding: 12px 14px;
     resize: vertical;
     font-family: ui-monospace, monospace;
@@ -434,71 +226,81 @@
   .row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
   .grow {
     flex: 1;
   }
   .filters {
     display: flex;
-    gap: 8px;
-    margin-bottom: 6px;
+    gap: 4px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
-  .filter {
-    padding: 7px 16px;
-    border-radius: 12px;
-    border: 2px solid var(--line);
-    font-size: 14px;
+  .filters button {
+    position: relative;
+    padding: 10px 12px;
+    font-size: 15px;
     font-weight: 800;
-    color: var(--dim);
+    color: var(--faint);
     text-transform: capitalize;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    transition: color 0.15s;
   }
-  .filter:hover {
+  .filters button:hover {
     color: var(--text);
   }
-  .filter.on {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  .filters button.on {
+    color: var(--text);
+  }
+  .filters button.on::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--accent);
   }
   .slot:not(:empty) {
-    margin-top: 26px;
+    margin-top: 22px;
   }
   .day {
     content-visibility: auto;
     contain-intrinsic-size: auto 400px;
   }
   h2 {
-    margin: 26px 0 10px 4px;
+    margin: 26px 0 6px;
+    font: 700 14px var(--font);
+    color: var(--faint);
   }
   .list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
   }
   .game {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1.7fr) auto 70px 96px;
+    grid-template-columns: 34px minmax(0, 1fr) auto 64px 64px;
     align-items: center;
     gap: 16px;
-    padding: 12px 18px 12px 14px;
-    border-radius: 16px;
-    border: 2px solid var(--line);
-    border-bottom-width: 4px;
-    background: var(--panel);
+    padding: 12px 12px;
+    margin: 0 -12px;
+    border-radius: 12px;
     color: inherit;
     text-decoration: none;
-    transition: transform 0.08s ease, background 0.15s, border-color 0.15s;
+    transition: background 0.12s;
+  }
+  .game + .game {
+    box-shadow: 0 -1px 0 var(--line);
   }
   .game:hover {
-    background: var(--panel-2);
-    border-color: var(--line-2);
+    background: var(--panel);
+    box-shadow: none;
   }
-  .game:active {
-    transform: translateY(2px);
-    border-bottom-width: 2px;
-    margin-bottom: 2px;
+  .game:hover + .game {
+    box-shadow: none;
   }
   .who-col {
     display: flex;
@@ -507,7 +309,7 @@
   }
   .name {
     font-weight: 800;
-    font-size: 16.5px;
+    font-size: 16px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -515,6 +317,8 @@
   .rating {
     margin-left: 8px;
     font-size: 14px;
+    font-weight: 700;
+    color: var(--faint);
   }
   .opening {
     font-size: 14px;
@@ -532,52 +336,41 @@
     text-transform: capitalize;
   }
   .result {
-    justify-self: center;
-    font-size: 13px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 4px 10px;
-    border-radius: 10px;
-    color: var(--dim);
-    background: var(--panel-2);
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--faint);
   }
   .result.win {
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--c-best);
   }
   .result.loss {
     color: var(--red);
-    background: color-mix(in srgb, var(--red) 14%, transparent);
   }
   .score {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    justify-content: flex-end;
   }
   .acc {
-    font-size: 22px;
-    font-weight: 900;
-    line-height: 1;
+    font: 600 19px var(--display);
   }
   .stale {
     opacity: 0.45;
   }
-  .small {
-    font-size: 12.5px;
+  .state {
+    font-size: 13.5px;
+    color: var(--faint);
+    font-weight: 700;
   }
   .bar {
-    width: 80px;
-    height: 10px;
-    border-radius: 10px;
+    width: 56px;
+    height: 6px;
+    border-radius: 6px;
     background: var(--line);
     overflow: hidden;
   }
   .bar span {
     display: block;
     height: 100%;
-    border-radius: 10px;
     background: var(--accent);
     transition: width 0.4s var(--ease);
   }
@@ -588,22 +381,21 @@
   .empty {
     display: grid;
     place-items: center;
-    gap: 14px;
+    gap: 12px;
     padding: 90px 0;
+    color: var(--dim);
   }
   .more {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin: 30px 0 0;
+    gap: 14px;
+    margin-top: 28px;
+    color: var(--faint);
+    font-weight: 700;
   }
-  .filters {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  @media (max-width: 820px) {
+  @media (max-width: 760px) {
     .game {
-      grid-template-columns: 44px 1fr 70px 80px;
+      grid-template-columns: 34px minmax(0, 1fr) 54px 54px;
     }
     .meta {
       display: none;
@@ -611,32 +403,15 @@
   }
   @media (max-width: 560px) {
     .page {
-      padding: 22px 14px 40px;
+      padding: 22px 16px 40px;
     }
     header {
       flex-wrap: wrap;
-    }
-    .who {
-      flex: 1 1 0;
-    }
-    h1 {
-      font-size: 26px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .queue {
-      display: block;
-    }
-    .tools {
-      width: 100%;
-    }
-    .tools > :global(*) {
-      flex: 1;
+      align-items: center;
     }
     .game {
-      grid-template-columns: 40px 1fr auto;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
       gap: 12px;
-      padding: 10px 12px;
     }
     .result {
       display: none;

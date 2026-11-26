@@ -336,7 +336,7 @@
 {#if stage === 'setup'}
   <div class="setup" in:fly={{ y: 10, duration: 360 }}>
     <div class="intro">
-      <Pip mood="happy" size={120} follow />
+      <Pip mood="happy" size={92} follow />
       <h1>Play Pip</h1>
       <p class="soft">A sparring partner that plays like a real person at your level, and stops you before you blunder if you want.</p>
     </div>
@@ -436,13 +436,12 @@
 
 <style>
   .setup {
-    min-height: calc(100vh - 90px);
     display: grid;
-    grid-template-columns: minmax(0, 380px) minmax(0, 460px);
-    gap: 48px;
-    align-items: center;
+    grid-template-columns: minmax(0, 360px) minmax(0, 460px);
+    gap: 56px;
+    align-items: start;
     justify-content: center;
-    padding: 30px 24px;
+    padding: 64px 24px 40px;
   }
   .intro {
     display: flex;
@@ -491,7 +490,7 @@
     gap: 8px;
     height: 46px;
     border-radius: 14px;
-    border: 2px solid var(--line);
+    border: 1px solid var(--line);
     border-bottom-width: 4px;
     font-weight: 800;
     font-size: 14.5px;
@@ -623,7 +622,7 @@
     padding: 4px 14px;
     border-radius: 10px;
     background: var(--panel);
-    border: 2px solid var(--line);
+    border: 1px solid var(--line);
     font-size: 17px;
     font-weight: 900;
     color: var(--dim);

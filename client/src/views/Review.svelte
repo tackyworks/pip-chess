@@ -574,7 +574,7 @@
   }
   .clock {
     background: var(--panel);
-    border: 2px solid var(--line);
+    border: 1px solid var(--line);
     padding: 3px 12px;
     border-radius: 10px;
     font-size: 15px;
@@ -589,8 +589,6 @@
     font-size: 12px;
     color: var(--accent);
     background: color-mix(in srgb, var(--accent) 14%, transparent);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
   }
   .side {
     display: flex;
@@ -665,8 +663,6 @@
     gap: 8px;
     font-size: 14px;
     font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: var(--dim);
   }
   .kicker.tag {
@@ -703,8 +699,6 @@
   .best-label {
     font-size: 13px;
     font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     color: var(--c-best);
   }
   .best b {
@@ -791,16 +785,16 @@
   .players {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
   }
-  .player {
-    padding: 12px 14px;
-    border-radius: 16px;
-    background: var(--bg);
-    border: 2px solid var(--line);
+  .player + .player {
+    padding-left: 16px;
+    border-left: 1px solid var(--line);
   }
-  .player.me {
-    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  .player.me .acc {
+    color: var(--accent);
   }
   .who {
     display: flex;
@@ -816,8 +810,8 @@
     text-overflow: ellipsis;
   }
   .acc {
-    font-size: 40px;
-    font-weight: 900;
+    font-size: 38px;
+    font-weight: 600;
     line-height: 1.1;
     margin-top: 6px;
   }
@@ -902,7 +896,8 @@
     gap: 8px;
     padding: 12px 16px;
     border-radius: var(--radius);
-    border: 2px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+    background: var(--panel);
+    border: 1px solid var(--line);
   }
   .draft-text {
     display: flex;

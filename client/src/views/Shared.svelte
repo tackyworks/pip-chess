@@ -53,7 +53,7 @@
     height: 70px;
     padding: 0 24px;
     background: var(--bg);
-    border-bottom: 2px solid var(--line);
+    border-bottom: 1px solid var(--line);
   }
   .brand {
     display: inline-flex;

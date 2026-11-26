@@ -397,20 +397,19 @@
     min-height: 40px;
   }
   .crumb {
-    padding: 5px 11px;
-    border-radius: 10px;
-    border: 2px solid var(--line);
-    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 15px;
     font-weight: 800;
-    color: var(--dim);
-    transition: color 0.15s, border-color 0.15s;
+    color: var(--faint);
+    transition: color 0.15s, background 0.15s;
   }
   .crumb:hover {
     color: var(--text);
+    background: var(--panel-2);
   }
   .crumb.on {
-    color: var(--accent);
-    border-color: var(--accent);
+    color: var(--text);
   }
   .quit {
     color: var(--faint);
@@ -432,7 +431,6 @@
     height: 100%;
     border-radius: 18px;
     background: var(--accent);
-    box-shadow: inset 0 -4px 0 var(--accent-d), inset 0 4px 0 rgb(255 255 255 / 0.25);
     transition: width 0.5s var(--spring);
   }
   .count {
@@ -457,13 +455,11 @@
     gap: 10px;
     height: 48px;
     border-radius: 14px;
-    border: 2px solid var(--line);
+    border: 1px solid var(--line);
     border-bottom-width: 4px;
     color: var(--dim);
     text-decoration: none;
     font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     font-size: 14px;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
@@ -592,7 +588,7 @@
     padding: 9px 12px;
     border-radius: 12px;
     background: var(--bg);
-    border: 2px solid var(--line);
+    border: 1px solid var(--line);
     text-align: left;
     transition: border-color 0.15s, background 0.15s;
   }
@@ -611,8 +607,6 @@
   .tag {
     font-size: 11.5px;
     font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
     padding: 2px 8px;
     border-radius: 8px;
   }
