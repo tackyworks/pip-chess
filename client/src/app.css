@@ -1,0 +1,334 @@
+@import '@fontsource-variable/nunito';
+@import '@fontsource-variable/fredoka';
+@import 'chessground/assets/chessground.base.css';
+
+:root {
+  --bg: #0b0b0c;
+  --bg-2: #060607;
+  --panel: #141415;
+  --panel-2: #1c1c1e;
+  --line: #29292c;
+  --line-2: #39393d;
+  --text: #f4f1ea;
+  --dim: #aaa59c;
+  --faint: #6f6b64;
+
+  --accent: #f2b544;
+  --accent-d: #c48b23;
+  --accent-ink: #241905;
+  --ivory: #f4f1ea;
+  --ivory-d: #c8c2b6;
+  --red: #e5574d;
+  --red-d: #b93f37;
+  --orange: #ec8a3c;
+  --orange-d: #c26a24;
+  --gold: #f2c14e;
+  --gold-d: #c99c2c;
+  --purple: #b48ee8;
+  --purple-d: #8f69c4;
+
+  --good: var(--accent);
+  --bad: var(--red);
+
+  --c-brilliant: #2bc2a4;
+  --d-brilliant: #1d9981;
+  --c-great: #5d93dc;
+  --d-great: #4473b7;
+  --c-best: #74b350;
+  --d-best: #59923b;
+  --c-excellent: #97c25e;
+  --d-excellent: #78a046;
+  --c-good: #a3ab93;
+  --d-good: #828a74;
+  --c-book: #b98f68;
+  --d-book: #95704e;
+  --c-forced: #8f8a80;
+  --d-forced: #706b63;
+  --c-inaccuracy: #f2c14e;
+  --d-inaccuracy: #c99c2c;
+  --c-mistake: #ec8a3c;
+  --d-mistake: #c26a24;
+  --c-miss: #e0739c;
+  --d-miss: #b8577b;
+  --c-blunder: #e5483f;
+  --d-blunder: #b8352e;
+
+  --sq-light: #f0d9b5;
+  --sq-dark: #b58863;
+
+  --radius: 18px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --font: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
+  --display: 'Fredoka Variable', 'Nunito Variable', system-ui, sans-serif;
+
+  color-scheme: dark;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+h1,
+h2,
+h3,
+.display {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.big,
+.acc,
+.score-big {
+  font-family: var(--display);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.faint {
+  color: var(--faint);
+}
+
+.btn {
+  --fill: var(--panel);
+  --edge: var(--line);
+  --ink: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 14px;
+  background: var(--fill);
+  color: var(--ink);
+  border: 2px solid var(--edge);
+  border-bottom-width: 4px;
+  font-weight: 800;
+  font-size: 14.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform 0.08s ease, filter 0.15s;
+}
+
+.btn:hover {
+  filter: brightness(1.08);
+}
+
+.btn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  margin-bottom: 2px;
+}
+
+.btn.primary {
+  --fill: var(--accent);
+  --edge: var(--accent-d);
+  --ink: var(--accent-ink);
+}
+
+.btn.ivory {
+  --fill: var(--ivory);
+  --edge: var(--ivory-d);
+  --ink: #141210;
+}
+
+.btn.ghost {
+  --fill: transparent;
+  --edge: transparent;
+  --ink: var(--accent);
+  border-bottom-width: 2px;
+}
+
+.btn.ghost:hover {
+  --fill: color-mix(in srgb, var(--accent) 10%, transparent);
+  filter: none;
+}
+
+.btn.ghost:active {
+  border-bottom-width: 2px;
+  margin-bottom: 0;
+  transform: translateY(1px);
+}
+
+.btn.icon {
+  width: 46px;
+  padding: 0;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  background: var(--panel-2);
+  color: var(--dim);
+}
+
+.card {
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.label {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.cg-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+cg-board {
+  border-radius: 12px;
+  background: repeating-conic-gradient(var(--sq-dark) 0 25%, var(--sq-light) 0 50%) 0 0 / 25% 25%;
+}
+
+cg-board square.last-move {
+  background-color: rgb(247 222 108 / 0.55);
+}
+
+cg-board square.selected {
+  background-color: rgb(242 181 68 / 0.55);
+}
+
+cg-board square.move-dest {
+  background: radial-gradient(rgb(20 16 12 / 0.28) 19%, transparent 21%);
+}
+
+cg-board square.move-dest:hover {
+  background: rgb(242 181 68 / 0.35);
+}
+
+cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0%, transparent 76%, rgb(20 16 12 / 0.28) 78%);
+}
+
+cg-board square.check {
+  background: radial-gradient(ellipse at center, rgb(255 75 75 / 0.95) 0%, rgb(255 75 75 / 0.5) 32%, transparent 70%);
+}
+
+cg-board square.hint {
+  box-shadow: inset 0 0 0 4px var(--accent);
+  background: rgb(242 181 68 / 0.3);
+}
+
+.cg-wrap coords {
+  font-family: var(--font);
+  font-weight: 800;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.cg-wrap coords.ranks coord:nth-child(odd),
+.cg-wrap coords.files coord:nth-child(even) {
+  color: var(--sq-light);
+}
+
+.cg-wrap coords.ranks coord:nth-child(even),
+.cg-wrap coords.files coord:nth-child(odd) {
+  color: var(--sq-dark);
+}
+
+cg-board piece {
+  transition: opacity 0.16s ease-out;
+}
+
+cg-board piece.anim {
+  filter: drop-shadow(0 7px 6px rgb(0 0 0 / 0.32));
+}
+
+cg-board piece.fading {
+  opacity: 0;
+}
+
+cg-board piece.dragging {
+  filter: drop-shadow(0 12px 12px rgb(0 0 0 / 0.4));
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 12px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
