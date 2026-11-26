@@ -60,7 +60,9 @@
     const H = 70
     const pts = smooth.map((v, i) => [(i / (smooth.length - 1)) * W, H - 6 - ((v - lo) / (hi - lo)) * (H - 12)] as const)
     const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
-    return { d, area: `${d} L${W},${H} L0,${H} Z`, end: pts.at(-1)!, W, H, delta: Math.round(smooth.at(-1)! - smooth[0]) }
+    const mean = (list: number[]) => list.reduce((a, b) => a + b, 0) / list.length
+    const delta = values.length >= 10 ? Math.round(mean(values.slice(-5)) - mean(values.slice(-10, -5))) : 0
+    return { d, area: `${d} L${W},${H} L0,${H} Z`, end: pts.at(-1)!, W, H, delta }
   })
 
   const leak = $derived(data?.focus[0] ?? null)
@@ -129,7 +131,7 @@
           </svg>
         {/if}
         <div class="chips">
-          {#if spark && spark.delta}<span class="chip trend" class:down={spark.delta < 0}>{spark.delta > 0 ? '+' : ''}{spark.delta} recently</span>{/if}
+          {#if spark && spark.delta}<span class="chip trend" class:down={spark.delta < 0}>{spark.delta > 0 ? '+' : ''}{spark.delta} over your last 5 games</span>{/if}
           {#if data.accuracy}<span class="chip">{data.accuracy}% accuracy</span>{/if}
           {#if data.rating}<span class="chip">{siteName()} {data.rating}</span>{/if}
           <span class="chip">{data.analyzed} games</span>
