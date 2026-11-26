@@ -1,0 +1,43 @@
+{
+  "name": "pip-chess",
+  "version": "1.0.0",
+  "description": "Pip, a free chess coach: game reviews that explain your mistakes, habits, an opening trainer and puzzles from your own games. Runs entirely in the browser.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "data": "node scripts/data.ts",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 3517",
+    "start": "vite preview --port 3517 --open",
+    "check": "tsc -p tsconfig.json && svelte-check --tsconfig client/tsconfig.json --tsgo",
+    "deploy": "npm run build && wrangler pages deploy",
+    "pages:dev": "npm run build && wrangler pages dev --port 8788"
+  },
+  "dependencies": {
+    "@fontsource-variable/fredoka": "^5.3.0",
+    "@sqlite.org/sqlite-wasm": "^3.54.1-build1",
+    "chessops": "^0.15.1",
+    "onnxruntime-web": "^1.31.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261125.1",
+    "@fontsource-variable/nunito": "^5.3.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.2",
+    "@types/node": "^26.6.10",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "chessground": "^9.2.1",
+    "stockfish": "^19.0.1",
+    "svelte": "^5.59.1",
+    "svelte-check": "^4.7.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "wrangler": "^4.168.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261123.1": true,
+    "esbuild@0.28.2": true,
+    "protobufjs": false
+  }
+}

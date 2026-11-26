@@ -1,0 +1,15 @@
+node_modules/
+client/dist/
+client/public/data/
+client/public/engine/
+client/public/pieces/
+client/public/puzzles/
+data/
+vendor/
+.svelte-check/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.env.example
+.claude/
