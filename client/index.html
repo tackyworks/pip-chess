@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0b0c" />
+    <!--seo:head--><!--/seo:head-->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://lichess.org" crossorigin />
+    <link rel="preconnect" href="https://api.chess.com" crossorigin />
+    <script>
+      try {
+        if (localStorage.getItem('pip.account')) document.documentElement.classList.add('returning')
+      } catch {}
+    </script>
+    <style>
+      html { background: #0b0b0c; color: #f4f1ea; }
+      .returning .seo { display: none; }
+      .seo { max-width: 760px; margin: 0 auto; padding: 72px 24px; font: 500 17px/1.6 system-ui, sans-serif; color: #aaa59c; }
+      .seo h1 { color: #f4f1ea; font-size: clamp(34px, 5vw, 54px); line-height: 1.08; margin: 18px 0; }
+      .seo h1 em { font-style: normal; color: #f2b544; }
+      .seo h2 { color: #f4f1ea; margin-top: 48px; }
+      .seo h3 { color: #f4f1ea; font-size: 18px; margin-bottom: 4px; }
+      .seo a { color: #f2b544; }
+      .seo-brand { color: #f2b544; font-size: 30px; }
+      .seo-lead { font-size: 20px; }
+      .seo-cta { display: inline-block; padding: 14px 24px; border-radius: 16px; background: #f2b544; color: #241905 !important; font-weight: 800; text-decoration: none; }
+      .seo nav { margin-top: 48px; line-height: 2; }
+      .seo-fine { font-size: 14px; color: #6f6b64; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!--seo:body--><!--/seo:body-->
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
